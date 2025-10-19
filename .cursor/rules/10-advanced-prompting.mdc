@@ -1,0 +1,9 @@
+---
+description: Advanced prompt patterns for production-grade enterprise code (M1).
+globs: ["prompts/**", "examples/**"]
+---
+# Advanced Prompting Rules
+- Structure prompts as: **Instruction → Constraints → Inputs → Steps → Self‑Critique**.
+- Constraints must reference `/context/standards.md` and domain rules in `/context/product_domain.md`.
+- Prefer "Minimal Change Patch" for fixes. Provide a unified diff and a short rollback plan.
+

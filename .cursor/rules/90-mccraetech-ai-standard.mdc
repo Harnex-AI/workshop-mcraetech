@@ -1,0 +1,19 @@
+---
+description: The McCraeTech AI Standard that unifies prompting, context, selection, and docs.
+globs: ["**/*"]
+---
+# McCraeTech AI Standard (Workshop 1)
+## Domain Red Flags
+- **PHI**: never log or include real patient data; use synthetic examples only.
+- **Consent**: require `EHR_VIEW` scope when accessing clinical data; fail safe if absent.
+- **UTC**: store/return timestamps as UTC; document conversions at boundaries.
+
+## Coding Expectations
+- **Java**: Spring idioms; thin Controller, thick Service; DTOs with Bean Validation; no entity leakage.
+- **.NET**: ASP.NET Core; nullable enabled; input validation; `ProblemDetails` for errors.
+
+## Process Expectations
+- Use the **Enterprise Code** prompt pattern for changes.
+- Choose model route deliberately; log runs; escalate when verification fails.
+- Generate/update `SDK_README.md` + `CHANGELOG.md` after meaningful changes.
+

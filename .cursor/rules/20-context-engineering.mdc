@@ -1,0 +1,9 @@
+---
+description: Treat repo docs and standards as grounding context (M3).
+globs: ["context/**", "examples/**", "docs/**"]
+---
+# Context Engineering Rules
+- Assume `/context/Agent.md` defines mission, inputs, and outputs.
+- Always cross-check health-domain specifics (PHI, consent scope, UTC) from `/context/product_domain.md`.
+- When guidance conflicts, defer to `/context/standards.md` and note the decision in output.
+

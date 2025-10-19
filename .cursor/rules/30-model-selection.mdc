@@ -1,0 +1,9 @@
+---
+description: Deliberate small/medium/large selection and escalation (M4).
+globs: ["ops/**", "examples/**"]
+---
+# Model Selection Rules
+- small → lint/edit/refactor; medium → generate code/docs; large → verification/ambiguity hunts.
+- If Self‑Critique fails or ambiguity remains, escalate to **large**, revise, and re‑verify.
+- Record each run in `/ops/run-report.md`.
+

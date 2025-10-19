@@ -1,0 +1,153 @@
+{
+  "interview_analysis": {
+    "mitchell_auckland": {
+      "team_profile": {
+        "location": "Auckland",
+        "team_size": "Not specified",
+        "ai_maturity": "Growing - 6 months into adoption",
+        "current_adoption": "60-70% using AI, varying confidence levels"
+      },
+      "current_tools": {
+        "universal": ["OpenAI Enterprise (Codex)"],
+        "individual_licenses": ["Cursor", "Claude Code", "JetBrains AI"],
+        "preference": "Tool-agnostic, IDE extensions preferred"
+      },
+      "tech_stack": {
+        "data_layer": ["Python", "Apache Spark", "Kafka"],
+        "backend": ["Java microservices", "PostgreSQL"],
+        "architecture": ["Event-driven", "Microservices"],
+        "special": ["Code generator with templates for Java"]
+      },
+      "ai_usage_patterns": {
+        "current_state": "AI-assisted workflows",
+        "main_uses": [
+          "Boilerplate generation from specs",
+          "Code review agent in GitLab (trial)",
+          "Agent files in repos for context"
+        ],
+        "experimentation": "Feeding specs to AI for initial code generation"
+      },
+      "key_challenges": [
+        "AI misses details translating specs to code",
+        "Difficulty understanding complex architectures",
+        "No standardized AI usage approach",
+        "IDE integration issues with Java",
+        "Varying adoption levels among team"
+      ],
+      "training_priorities": [
+        "Effective prompting for software development",
+        "Spec-driven development (AI-friendly specs)",
+        "Standardizing AI usage",
+        "Multi-agent workflows",
+        "Development secrets handling",
+        "AI for research and design work"
+      ],
+      "success_metrics": [
+        "Increased usage by resistant team members",
+        "More effective spec-to-code workflows",
+        "Standardized practices across team"
+      ]
+    },
+    "xavier_thailand": {
+      "team_profile": {
+        "location": "Thailand (Bangkok)",
+        "team_size": "12 developers",
+        "codebase_size": "15-20 million lines",
+        "ai_maturity": "Early stage - ad-hoc usage",
+        "current_adoption": "Limited due to extreme workload"
+      },
+      "current_tools": {
+        "universal": ["ChatGPT subscription"],
+        "individual_licenses": ["Cursor in VS Code"],
+        "preference": "Microsoft ecosystem naturally"
+      },
+      "tech_stack": {
+        "frontend": ["React"],
+        "backend": [".NET Core microservices"],
+        "infrastructure": ["Docker", "Kubernetes", "Azure DevOps"],
+        "deployment": ["On-prem with Rancher", "AKS/EKS for cloud"],
+        "version_control": ["TFS (legacy)", "Azure Git"],
+        "api_spec": ["OpenAPI v3"]
+      },
+      "ai_usage_patterns": {
+        "current_state": "Ad-hoc task automation",
+        "main_uses": [
+          "One-off automation scripts",
+          "Data extraction and migration",
+          "Quick fixes and edits"
+        ],
+        "limited_by": "Time constraints and context switching"
+      },
+      "key_challenges": [
+        "Strict coding standards must be maintained",
+        "Extremely busy with tight deadlines",
+        "Learning curve barrier with limited time",
+        "Legacy codebase not fully modernized",
+        "Team is introverted/quiet (communication style)"
+      ],
+      "training_priorities": [
+        "Automated test generation (unit/integration)",
+        "Documentation generation for SDK",
+        "DevOps pipeline configuration",
+        "Code standardization with AI",
+        "Hands-on practical examples"
+      ],
+      "success_metrics": [
+        "Automated testing coverage increase",
+        "Documentation generation efficiency",
+        "Time saved on repetitive tasks"
+      ]
+    },
+    "common_themes": {
+      "challenges": [
+        "No standardized AI practices",
+        "Time constraints limiting adoption",
+        "Complex legacy codebases",
+        "Varying team confidence levels",
+        "Need for production-ready code standards"
+      ],
+      "opportunities": [
+        "Spec-driven development",
+        "Multi-agent workflows",
+        "Automated testing generation",
+        "Documentation automation",
+        "Research and design assistance"
+      ],
+      "training_needs": [
+        "Prompt engineering fundamentals",
+        "Context engineering strategies",
+        "Production-level code generation",
+        "Tool-agnostic approaches",
+        "Practical hands-on exercises"
+      ]
+    },
+    "divergent_needs": {
+      "auckland": {
+        "focus": "Standardization and deeper integration",
+        "maturity": "More advanced, ready for multi-agent",
+        "preference": "Wants research/design capabilities"
+      },
+      "thailand": {
+        "focus": "Time-saving automation basics",
+        "maturity": "Earlier stage, needs fundamentals",
+        "preference": "Hands-on with minimal theory",
+        "special_consideration": "Quiet/introverted team culture"
+      }
+    },
+    "workshop_constraints": {
+      "format": "Hybrid (in-person Auckland, remote Thailand)",
+      "duration": "2 sessions x 2 hours each",
+      "dates": "20th and 22nd (Monday/Wednesday)",
+      "structure": [
+        "Expert-led demos",
+        "Practical hands-on via GitHub repo",
+        "Q&A sections"
+      ],
+      "tech_requirements": [
+        "Mirror both tech stacks in examples",
+        "Tool-agnostic approaches",
+        "Focus on latest tools: Cursor, Claude Code, OpenAI Codex CLI"
+      ]
+    }
+  }
+}
