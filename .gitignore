@@ -6,3 +6,5 @@ obj/
 .env
 *.log
 
+.cursor/context/interview_analysis.json
+.cursor/context/interview_comparison.md
