@@ -1,0 +1,394 @@
+---
+description: RESTful API design patterns for healthcare APIs
+globs: ["**/Controllers/**", "**/controllers/**", "**/api/**/*.yaml", "**/openapi/**", "**/*.ts", "**/*.js"]
+---
+# Healthcare API Design Patterns
+
+## PAGINATION (Required for list endpoints)
+
+### Java/Spring
+```java
+@GetMapping("/patients")
+public Page<PatientDto> listPatients(
+    @RequestParam(defaultValue = "0") int page,
+    @RequestParam(defaultValue = "20") int size,
+    @RequestParam(defaultValue = "100") int maxSize) {
+    
+    // Enforce max page size for performance
+    int effectiveSize = Math.min(size, maxSize);
+    
+    // Validate page number
+    if (page < 0) {
+        throw new IllegalArgumentException("Page number must be >= 0");
+    }
+    
+    return service.findAll(PageRequest.of(page, effectiveSize));
+}
+
+// Response includes pagination metadata
+{
+    "content": [...],
+    "page": {
+        "size": 20,
+        "number": 0,
+        "totalElements": 150,
+        "totalPages": 8
+    }
+}
+```
+
+### C#/.NET
+```csharp
+[HttpGet("patients")]
+public async Task<ActionResult<PagedResult<PatientDto>>> GetPatients(
+    [FromQuery] int page = 0,
+    [FromQuery] int pageSize = 20,
+    [FromQuery] int maxPageSize = 100)
+{
+    // Enforce limits
+    var effectiveSize = Math.Min(pageSize, maxPageSize);
+    
+    if (page < 0)
+        return BadRequest("Page number must be >= 0");
+    
+    var result = await _service.GetPatientsAsync(page, effectiveSize);
+    
+    return Ok(new PagedResult<PatientDto> {
+        Items = result.Items,
+        Page = page,
+        PageSize = effectiveSize,
+        TotalCount = result.TotalCount,
+        TotalPages = (int)Math.Ceiling(result.TotalCount / (double)effectiveSize)
+    });
+}
+```
+
+### TypeScript/Express
+```typescript
+app.get('/patients', async (req, res) => {
+    const page = Math.max(0, parseInt(req.query.page as string) || 0);
+    const pageSize = Math.min(
+        parseInt(req.query.pageSize as string) || 20,
+        100 // max page size
+    );
+    
+    const result = await service.getPatients(page, pageSize);
+    
+    res.json({
+        items: result.items,
+        page,
+        pageSize,
+        totalCount: result.totalCount,
+        totalPages: Math.ceil(result.totalCount / pageSize)
+    });
+});
+```
+
+## FILTERING (Secure by default)
+
+### C#/.NET
+```csharp
+[HttpGet("appointments")]
+public async Task<IActionResult> GetAppointments(
+    [FromQuery] DateTime? fromDate,
+    [FromQuery] DateTime? toDate,
+    [FromQuery] string? status,
+    [FromHeader(Name = "X-Patient-Context")] string patientContext) // Required for patient data
+{
+    // Validate patient context
+    if (string.IsNullOrEmpty(patientContext))
+        return BadRequest("Patient context header is required");
+    
+    // Enforce date range limits
+    var effectiveFrom = fromDate ?? DateTime.UtcNow.AddMonths(-3);
+    var effectiveTo = toDate ?? DateTime.UtcNow.AddMonths(3);
+    
+    if ((effectiveTo - effectiveFrom).TotalDays > 365)
+        return BadRequest("Date range cannot exceed 365 days");
+    
+    // Validate status values
+    var validStatuses = new[] { "scheduled", "completed", "cancelled" };
+    if (!string.IsNullOrEmpty(status) && !validStatuses.Contains(status.ToLower()))
+        return BadRequest($"Invalid status. Must be one of: {string.Join(", ", validStatuses)}");
+    
+    // Apply patient context filter automatically (security)
+    var results = await _service.GetAppointments(
+        effectiveFrom, effectiveTo, status, patientContext);
+    
+    return Ok(results);
+}
+```
+
+### Java/Spring
+```java
+@GetMapping("/clinical-records")
+public ResponseEntity<List<ClinicalRecordDto>> getClinicalRecords(
+    @RequestParam(required = false) @DateTimeFormat(iso = ISO.DATE) LocalDate fromDate,
+    @RequestParam(required = false) @DateTimeFormat(iso = ISO.DATE) LocalDate toDate,
+    @RequestParam(required = false) String recordType,
+    @RequestHeader("X-Patient-Context") String patientContext,
+    @RequestHeader("X-Consent-Scope") String consentScope) {
+    
+    // Validate consent
+    if (!consentScope.contains("EHR_VIEW")) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+            .body(null);
+    }
+    
+    // Default date range
+    LocalDate effectiveFrom = fromDate != null ? fromDate : LocalDate.now().minusMonths(6);
+    LocalDate effectiveTo = toDate != null ? toDate : LocalDate.now();
+    
+    // Enforce max range
+    if (ChronoUnit.DAYS.between(effectiveFrom, effectiveTo) > 365) {
+        return ResponseEntity.badRequest().build();
+    }
+    
+    // Apply filters with patient context
+    var results = service.getClinicalRecords(
+        effectiveFrom, effectiveTo, recordType, patientContext);
+    
+    return ResponseEntity.ok(results);
+}
+```
+
+## AUDIT HEADERS (Automatically add)
+
+For any data modification:
+
+### Java/Spring
+```java
+@PostMapping
+public ResponseEntity<?> create(
+    @RequestHeader("X-Correlation-Id") String correlationId,
+    @RequestHeader("X-User-Id") String userId,
+    @RequestHeader("X-Session-Id") String sessionId,
+    @RequestBody CreateDto dto) {
+    
+    // Create audit context
+    var auditContext = AuditContext.builder()
+        .correlationId(correlationId)
+        .userId(userId)
+        .sessionId(sessionId)
+        .timestamp(Instant.now())
+        .action("CREATE")
+        .build();
+    
+    // Pass audit context through service layers
+    var result = service.create(dto, auditContext);
+    
+    return ResponseEntity.created(URI.create("/api/resource/" + result.getId()))
+        .header("X-Correlation-Id", correlationId)
+        .body(result);
+}
+```
+
+### C#/.NET
+```csharp
+[HttpPost]
+public async Task<IActionResult> Create(
+    [FromBody] CreateDto dto,
+    [FromHeader(Name = "X-Correlation-Id")] string correlationId,
+    [FromHeader(Name = "X-User-Id")] string userId)
+{
+    // Generate correlation ID if not provided
+    correlationId ??= Guid.NewGuid().ToString();
+    
+    var auditContext = new AuditContext {
+        CorrelationId = correlationId,
+        UserId = userId,
+        SessionId = HttpContext.Session.Id,
+        Timestamp = DateTime.UtcNow,
+        Action = "CREATE",
+        IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString()
+    };
+    
+    var result = await _service.CreateAsync(dto, auditContext);
+    
+    Response.Headers.Add("X-Correlation-Id", correlationId);
+    
+    return CreatedAtAction(nameof(Get), new { id = result.Id }, result);
+}
+```
+
+## VERSIONING
+
+### URL Versioning
+```csharp
+[ApiController]
+[Route("api/v{version:apiVersion}/patients")]
+[ApiVersion("1.0")]
+[ApiVersion("2.0")]
+public class PatientsController : ControllerBase
+{
+    [HttpGet]
+    [MapToApiVersion("1.0")]
+    public IActionResult GetV1() { }
+    
+    [HttpGet]
+    [MapToApiVersion("2.0")]
+    public IActionResult GetV2() { }
+}
+```
+
+### Header Versioning
+```java
+@GetMapping(headers = "X-API-Version=1")
+public ResponseEntity<PatientDtoV1> getPatientV1(@PathVariable String id) { }
+
+@GetMapping(headers = "X-API-Version=2")
+public ResponseEntity<PatientDtoV2> getPatientV2(@PathVariable String id) { }
+```
+
+## IDEMPOTENCY
+
+### Idempotent POST/PUT
+```csharp
+[HttpPost]
+public async Task<IActionResult> CreateAppointment(
+    [FromBody] AppointmentDto dto,
+    [FromHeader(Name = "Idempotency-Key")] string idempotencyKey)
+{
+    if (string.IsNullOrEmpty(idempotencyKey))
+        return BadRequest("Idempotency-Key header is required");
+    
+    // Check if already processed
+    var existing = await _cache.GetAsync<AppointmentDto>(idempotencyKey);
+    if (existing != null)
+        return Ok(existing); // Return cached result
+    
+    // Process request
+    var result = await _service.CreateAppointmentAsync(dto);
+    
+    // Cache result for 24 hours
+    await _cache.SetAsync(idempotencyKey, result, TimeSpan.FromHours(24));
+    
+    return CreatedAtAction(nameof(Get), new { id = result.Id }, result);
+}
+```
+
+## RATE LIMITING
+
+### Controller-level Rate Limiting
+```csharp
+[HttpGet]
+[RateLimit(Requests = 100, Period = "1m")] // 100 requests per minute
+public async Task<IActionResult> GetPatients()
+{
+    // Implementation
+}
+
+[HttpPost]
+[RateLimit(Requests = 10, Period = "1m")] // 10 creates per minute
+public async Task<IActionResult> CreatePatient([FromBody] PatientDto dto)
+{
+    // Implementation
+}
+```
+
+## RESPONSE FORMATS
+
+### Success Response
+```json
+{
+    "data": {
+        "id": "pat_123",
+        "referenceId": "PAT-2024-001",
+        "status": "active"
+    },
+    "meta": {
+        "timestamp": "2024-01-15T14:30:00Z",
+        "correlationId": "abc-123-def"
+    }
+}
+```
+
+### Error Response (RFC 7807)
+```json
+{
+    "type": "https://api.example.com/errors/consent-expired",
+    "title": "Consent Expired",
+    "status": 403,
+    "detail": "Consent has expired. Please renew consent.",
+    "instance": "/api/patients/pat_123",
+    "correlationId": "abc-123-def",
+    "timestamp": "2024-01-15T14:30:00Z"
+}
+```
+
+## SEARCH ENDPOINTS
+
+### Advanced Search
+```java
+@PostMapping("/patients/search")
+public ResponseEntity<Page<PatientDto>> searchPatients(
+    @RequestBody PatientSearchCriteria criteria,
+    @RequestParam(defaultValue = "0") int page,
+    @RequestParam(defaultValue = "20") int size) {
+    
+    // Validate search criteria
+    if (criteria.isEmpty()) {
+        return ResponseEntity.badRequest().build();
+    }
+    
+    // Enforce max results
+    int effectiveSize = Math.min(size, 100);
+    
+    // Execute search
+    var results = searchService.search(criteria, PageRequest.of(page, effectiveSize));
+    
+    return ResponseEntity.ok(results);
+}
+```
+
+## BULK OPERATIONS
+
+### Batch Create
+```csharp
+[HttpPost("batch")]
+public async Task<IActionResult> CreateBatch(
+    [FromBody] List<CreateDto> items,
+    [FromHeader(Name = "X-Correlation-Id")] string correlationId)
+{
+    // Enforce batch size limit
+    if (items.Count > 100)
+        return BadRequest("Batch size cannot exceed 100 items");
+    
+    var results = new List<BatchResult>();
+    
+    foreach (var (item, index) in items.Select((item, i) => (item, i)))
+    {
+        try {
+            var result = await _service.CreateAsync(item);
+            results.Add(new BatchResult {
+                Index = index,
+                Success = true,
+                Data = result
+            });
+        } catch (Exception ex) {
+            _logger.LogError(ex, "Batch item {Index} failed", index);
+            results.Add(new BatchResult {
+                Index = index,
+                Success = false,
+                Error = ex.Message
+            });
+        }
+    }
+    
+    return Ok(new {
+        TotalItems = items.Count,
+        SuccessCount = results.Count(r => r.Success),
+        FailureCount = results.Count(r => !r.Success),
+        Results = results
+    });
+}
+```
+
+## COMPLIANCE NOTES
+- All list endpoints must support pagination
+- Date range filters must have max limits
+- Patient context required for clinical data
+- Audit headers required for modifications
+- Idempotency keys for critical operations
+- Rate limiting for public endpoints
+

@@ -1,9 +1,0 @@
----
-description: Generate SDK README and CHANGELOG from current code and context (M7).
-globs: ["docs/**", "prompts/**", "examples/**"]
----
-# Docs Automation Rules
-- Use `prompts/sdk_readme.pattern.md` to produce `/docs/SDK_README.md` using example code + context.
-- Add a bullet under `/docs/CHANGELOG.md` using `prompts/changelog_entry.pattern.md`.
-- Limitations must state any remaining ambiguity (e.g., consent header semantics or timezone).
-
